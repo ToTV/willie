@@ -1,0 +1,12 @@
+feedparser
+pytz
+lxml
+praw
+pyenchant
+pygeoip
+requests
+humanize
+redis
+pytest
+python-dateutil
+-e git+ssh://git@github.com/ToTV/totv-python.git#egg=totv

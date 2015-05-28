@@ -14,7 +14,7 @@ willie.wiki/*
 *.spec
 .*.sw*
 .pid-*
-
+default.ini
 # IntelliJ idea
 .idea
 *.iml
