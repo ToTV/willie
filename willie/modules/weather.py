@@ -8,12 +8,11 @@ Licensed under the Eiffel Forum License 2.
 http://willie.dftba.net
 """
 from __future__ import unicode_literals
-
 from willie import web
 from willie.module import commands, example, NOLIMIT
-
 import feedparser
 from lxml import etree
+from totv.theme import render_error, render, EntityGroup, Entity
 
 
 def woeid_search(query):
@@ -128,8 +127,10 @@ def weather(bot, trigger):
     if not location:
         woeid = bot.db.get_nick_value(trigger.nick, 'woeid')
         if not woeid:
-            return bot.msg(trigger.sender, "I don't know where you live. " +
-                           'Give me a location, like .weather London, or tell me where you live by saying .setlocation London, for example.')
+            err_str = "I don't know where you live. Give me a location, like .weather " \
+                      "London, or tell me where you live by saying .setlocation London, for example."
+
+            return bot.msg(trigger.sender, render_error(err_str, "weather"))
     else:
         location = location.strip()
         woeid = bot.db.get_nick_value(location, 'woeid')
@@ -139,18 +140,27 @@ def weather(bot, trigger):
                 woeid = first_result.find('woeid').text
 
     if not woeid:
-        return bot.reply("I don't know where that is.")
+        return bot.reply(render_error("I don't know where that is", "weather"))
 
     query = web.urlencode({'w': woeid, 'u': 'c'})
     url = 'http://weather.yahooapis.com/forecastrss?' + query
     parsed = feedparser.parse(url)
-    location = parsed['feed']['title']
+    location = parsed['feed']['title'][17:]
 
     cover = get_cover(parsed)
     temp = get_temp(parsed)
     humidity = get_humidity(parsed)
     wind = get_wind(parsed)
-    bot.say(u'%s: %s, %s, %s, %s' % (location, cover, temp, humidity, wind))
+    bot.say(render(items=[
+        EntityGroup([Entity("Weather")]),
+        EntityGroup([
+            Entity(location),
+            Entity("Cover", cover),
+            Entity("Temp", temp),
+            Entity("Hum.", humidity),
+            Entity("Wind", wind)
+        ])
+    ]))
 
 
 @commands('setlocation', 'setwoeid')
@@ -158,12 +168,12 @@ def weather(bot, trigger):
 def update_woeid(bot, trigger):
     """Set your default weather location."""
     if not trigger.group(2):
-        bot.reply('Give me a location, like "Washington, DC" or "London".')
+        bot.reply(render_error('Give me a location, like "Washington, DC" or "London".', "weather"))
         return NOLIMIT
 
     first_result = woeid_search(trigger.group(2))
     if first_result is None:
-        return bot.reply("I don't know where that is.")
+        return bot.reply(render_error("I don't know where that is.", "weather"))
 
     woeid = first_result.find('woeid').text
 
@@ -176,5 +186,20 @@ def update_woeid(bot, trigger):
     state = first_result.find('state').text or ''
     country = first_result.find('country').text or ''
     uzip = first_result.find('uzip').text or ''
-    bot.reply('I now have you at WOEID %s (%s %s, %s, %s %s.)' %
-              (woeid, neighborhood, city, state, country, uzip))
+
+    items = [EntityGroup([Entity("WeatherSet")])]
+    group = EntityGroup()
+    if woeid:
+        group.append(Entity("WoeID", woeid))
+    if neighborhood:
+        group.append(Entity("Neighborhood", neighborhood))
+    if city:
+        group.append(Entity("City", city))
+    if state:
+        group.append(Entity("State", state))
+    if country:
+        group.append(Entity("Country", country))
+    if uzip:
+        group.append(Entity("UZip", uzip))
+    items.append(group)
+    bot.reply(render(items=items))
