@@ -7,7 +7,7 @@ import humanize
 import requests
 from willie import module
 
-from totv import site
+from totv import tracker
 from totv.theme import Entity, render, EntityGroup
 
 
@@ -24,7 +24,7 @@ def series(bot, trigger):
     if trigger.group(2) is None:
         bot.say('You need to give me a series to search!')
     else:
-        data = site.callApi('/series/search?series=' + parse.quote(trigger.group(2)))
+        data = tracker.bot_api_request('/series/search?series=' + parse.quote(trigger.group(2)))
         if 'status_code' in data:
             bot.say(data['message'])
         else:

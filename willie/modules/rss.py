@@ -8,6 +8,7 @@ http://willie.dfbta.net
 from __future__ import unicode_literals
 
 from datetime import datetime
+from sqlite3 import DatabaseError
 import time
 import re
 import socket
@@ -34,7 +35,7 @@ def setup(bot):
     # The rss_feeds table was added on 2013-07-17.
     try:
         c.execute('SELECT * FROM rss_feeds')
-    except StandardError:
+    except DatabaseError:
         create_table(bot, c)
         conn.commit()
     conn.close()
