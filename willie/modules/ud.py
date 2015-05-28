@@ -5,7 +5,7 @@ from urllib import parse
 import requests
 
 from willie.module import commands
-from totv.theme import render, EntityGroup, Entity
+from totv.theme import render, EntityGroup, Entity, render_error
 
 
 @commands('ud', 'urbandictionary')
@@ -18,7 +18,7 @@ def urbandictionary(bot, trigger):
     if str(data['result_type']) != 'no_results':
         show_ud(bot, data)
     else:
-        bot.say("This is not the definition you are looking for. Sorry.")
+        bot.say(render_error("No definition found"))
 
 
 @commands('udr', 'urbandictionaryrandom', 'udrandom')

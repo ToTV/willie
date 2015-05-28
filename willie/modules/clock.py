@@ -25,8 +25,8 @@ def configure(config):
                            'Preferred time format (http://strftime.net)', '%F - %T%Z')
 
 
-@commands('t', 'time')
-@example('.t America/New_York')
+@commands('time')
+@example('.time America/New_York')
 def f_time(bot, trigger):
     """Returns the current time."""
     if trigger.group(2):

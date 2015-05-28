@@ -8,7 +8,7 @@ import requests
 from willie import module
 
 from totv import tracker
-from totv.theme import Entity, render, EntityGroup
+from totv.theme import Entity, render, EntityGroup, render_error
 
 
 _base_url = ""
@@ -71,14 +71,14 @@ def series(bot, trigger):
 
 
 @module.commands('next', 'n')
-def next(bot, trigger):
+def next_series(bot, trigger):
     if trigger.group(2) is None:
-        bot.say('You need to give me a series to search!')
+        bot.say(render_error("You need to give me a series to search!", "Next"))
     else:
         r = requests.get('http://services.tvrage.com/tools/quickinfo.php?show=%s' % trigger.group(2))
 
         if r.text.startswith('No Show Results Were Found For'):
-            bot.say(r.text)
+            bot.say(render_error(r.text, "Next"))
             return
 
         showinfo = {}
@@ -96,14 +96,6 @@ def next(bot, trigger):
         items.append(details)
         bot.say(render(items=items))
 
-        # out = []
-        # out.append('\x02%(Show Name)s (%(Country)s)\x02' % showinfo)
-        # out.append('\x0307%(Status)s\x03' % showinfo)
-        # if 'Airtime' in showinfo:
-        # out.append('\x0307%(Airtime)s\x03' % showinfo)
-        # if 'Network' in showinfo:
-        #     out.append('\x0307on %(Network)s\x03' % showinfo)
-        # bot.say(' / '.join(out))
         items_next = [EntityGroup([Entity("Next Episode")])]
         if 'Next Episode' in showinfo:
             if 'RFC3339' in showinfo:
@@ -119,7 +111,6 @@ def next(bot, trigger):
             next_details.append(Entity("Airs on", epdate))
             if from_now:
                 next_details.append(Entity(from_now))
-            # next_episode += " :: [\0033 " + data['next_episode']['title'] + " \00310|\0033  + " \00310]"
             items_next.append(next_details)
         else:
             items_next.append(Entity('No next episode found'))

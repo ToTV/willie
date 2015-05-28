@@ -7,6 +7,7 @@ Licensed under the Eiffel Forum License 2.
 
 """
 from __future__ import unicode_literals, division
+from totv.theme import render_error, render, EntityGroup, Entity
 from willie.module import commands, example, NOLIMIT
 import re
 
@@ -24,7 +25,7 @@ def c_to_k(temp):
 
 
 def c_to_f(temp):
-    return (9.0 / 5.0 * temp + 32)
+    return 9.0 / 5.0 * temp + 32
 
 
 def k_to_c(temp):
@@ -56,7 +57,13 @@ def temperature(bot, trigger):
 
     kelvin = c_to_k(celsius)
     fahrenheit = c_to_f(celsius)
-    bot.reply("{:.2f}°C = {:.2f}°F = {:.2f}K".format(celsius, fahrenheit, kelvin))
+    bot.say(render(items=[
+        EntityGroup([Entity("Temperature")]),
+        EntityGroup([
+            Entity("Celsius", "{:.2f}°C".format(celsius)),
+            Entity("Fahrenheit", "{:.2f}°F".format(fahrenheit)),
+            Entity("Kelvin", "{:.2f}K".format(kelvin))])
+    ]))
 
 
 @commands('length', 'distance')
@@ -77,7 +84,7 @@ def distance(bot, trigger):
     try:
         source = find_length.match(trigger.group(2)).groups()
     except (AttributeError, TypeError):
-        bot.reply("That's not a valid length unit.")
+        bot.say(render_error("That's not a valid length unit", "Distance"))
         return NOLIMIT
     unit = source[1].lower()
     numeric = float(source[0])
@@ -106,13 +113,13 @@ def distance(bot, trigger):
         meter = numeric * 30856776376340068
 
     if meter >= 1000:
-        metric_part = '{:.2f}km'.format(meter / 1000)
+        metric_part = '{:.2f} km'.format(meter / 1000)
     elif meter < 0.01:
-        metric_part = '{:.2f}mm'.format(meter * 1000)
+        metric_part = '{:.2f} mm'.format(meter * 1000)
     elif meter < 1:
-        metric_part = '{:.2f}cm'.format(meter * 100)
+        metric_part = '{:.2f} cm'.format(meter * 100)
     else:
-        metric_part = '{:.2f}m'.format(meter)
+        metric_part = '{:.2f} m'.format(meter)
 
     # Shit like this makes me hate being an American.
     inch = meter * 39.37
@@ -137,8 +144,10 @@ def distance(bot, trigger):
         parts.append('{:.2f} inches'.format(inch))
 
         stupid_part = ', '.join(parts)
-
-    bot.reply('{} = {}'.format(metric_part, stupid_part))
+    bot.say(render(items=[
+        EntityGroup([Entity("Distance")]),
+        EntityGroup([Entity(metric_part, stupid_part)])
+    ]))
 
 
 @commands('weight', 'mass')
@@ -149,7 +158,7 @@ def mass(bot, trigger):
     try:
         source = find_mass.match(trigger.group(2)).groups()
     except (AttributeError, TypeError):
-        bot.reply("That's not a valid mass unit.")
+        bot.say(render_error("That's not a valid mass unit.", "Weight"))
         return NOLIMIT
     unit = source[1].lower()
     numeric = float(source[0])
@@ -178,8 +187,10 @@ def mass(bot, trigger):
             stupid_part += ' {:.2f} ounces'.format(ounce)
     else:
         stupid_part = '{:.2f} oz'.format(ounce)
-
-    bot.reply('{} = {}'.format(metric_part, stupid_part))
+    bot.say(render(items=[
+        EntityGroup([Entity("Mass")]),
+        EntityGroup([Entity(metric_part, stupid_part)])
+    ]))
 
 if __name__ == "__main__":
     from willie.test_tools import run_example_tests

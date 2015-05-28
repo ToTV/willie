@@ -18,7 +18,7 @@ import re
 
 from willie import web, tools
 from willie.module import rule, commands, example
-from totv.theme import render, EntityGroup, Entity
+from totv.theme import render, EntityGroup, Entity, render_error
 
 
 ISO8601_PERIOD_REGEX = re.compile(
@@ -99,8 +99,7 @@ def ytsearch(bot, trigger):
     uri = 'https://www.googleapis.com/youtube/v3/videos?id=' + vid + '&part=contentDetails,snippet,statistics'
     video_info = ytget(bot, trigger, uri)
     if video_info is None:
-        return
-
+        bot.say(render_error("Failed to find results", "youtube"))
     bot.say(render_video_info(video_info))
 
 

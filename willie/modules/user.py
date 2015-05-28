@@ -123,8 +123,10 @@ def lock_down(bot, trigger):
 def user_join(bot, trigger):
     if re.search('titansof\.tv', trigger.host.lower()):
         username = trigger.host.split('.')[0]
-
-        data = tracker.bot_api_request('/userinfo/' + username)
+        try:
+            data = tracker.bot_api_request('/userinfo/' + username)
+        except ValueError:
+            return
         if 'status_code' in data:
             bot.say(data['message'])
             return
