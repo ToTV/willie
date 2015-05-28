@@ -14,7 +14,7 @@ import sys
 import os
 import shutil
 
-requires = ['feedparser', 'pytz', 'lxml', 'praw', 'pyenchant', 'pygeoip']
+requires = ['feedparser', 'pytz', 'lxml', 'praw', 'pyenchant', 'pygeoip', 'requests', 'humanize', 'redis']
 if sys.version_info.major < 3:
     requires.append('backports.ssl_match_hostname')
 

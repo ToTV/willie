@@ -4,15 +4,14 @@ search.py - Willie Web Search Module
 Copyright 2008-9, Sean B. Palmer, inamidst.com
 Copyright 2012, Edward Powell, embolalia.net
 Licensed under the Eiffel Forum License 2.
-
 http://willie.dftba.net
 """
-from __future__ import unicode_literals
-
+from __future__ import absolute_import, print_function, unicode_literals
 import re
+import json
+
 from willie import web
 from willie.module import commands, example
-import json
 
 
 def formatnumber(n):
@@ -21,6 +20,7 @@ def formatnumber(n):
     for i in range((len(parts) - 3), 0, -3):
         parts.insert(i, ',')
     return ''.join(parts)
+
 
 r_bing = re.compile(r'<h3><a href="([^"]+)"')
 
@@ -32,16 +32,17 @@ def bing_search(query, lang='en-GB'):
     if m:
         return m.group(1)
 
+
 r_duck = re.compile(r'nofollow" class="[^"]+" href="(.*?)">')
 
 
 def duck_search(query):
     query = query.replace('!', '')
     uri = 'http://duckduckgo.com/html/?q=%s&kl=uk-en' % query
-    bytes = web.get(uri)
+    b = web.get(uri)
     if 'web-result"' in bytes:  # filter out the adds on top of the page
-        bytes = bytes.split('web-result"')[1]
-    m = r_duck.search(bytes)
+        b = bytes.split(b'web-result"')[1]
+    m = r_duck.search(b)
     if m:
         return web.decode(m.group(1))
 

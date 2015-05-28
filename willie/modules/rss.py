@@ -3,7 +3,6 @@
 rss.py - Willie RSS Module
 Copyright 2012, Michael Yanovich, yanovich.net
 Licensed under the Eiffel Forum License 2.
-
 http://willie.dfbta.net
 """
 from __future__ import unicode_literals
@@ -14,10 +13,9 @@ import re
 import socket
 
 import feedparser
-
 from willie.module import commands, interval
-from willie.config import ConfigurationError
 from willie.logger import get_logger
+
 
 LOGGER = get_logger(__name__)
 
@@ -74,7 +72,7 @@ def colour_text(text, fg=None, bg=None):
 
 @commands('rss')
 def manage_rss(bot, trigger):
-    """Manage RSS feeds. For a list of commands, type: .rss help"""
+    """Manage RSS feeds. For a list of commands, type: !rss help"""
     bot.memory['rss_manager'].manage_rss(bot, trigger)
 
 
@@ -93,14 +91,14 @@ class RSSManager:
                 bot.reply(line)
 
     def manage_rss(self, bot, trigger):
-        """Manage RSS feeds. Usage: .rss <command>"""
+        """Manage RSS feeds. Usage: !rss <command>"""
         if not trigger.admin:
             bot.reply("Sorry, you need to be an admin to modify the RSS feeds.")
             return
 
         text = trigger.group().split()
         if (len(text) < 2 or text[1] not in self.actions):
-            bot.reply("Usage: .rss <command>")
+            bot.reply("Usage: !rss <command>")
             bot.reply("Available RSS commands: " + ', '.join(self.actions))
             return
 
@@ -111,14 +109,14 @@ class RSSManager:
         conn.close()
 
     def _rss_start(self, bot, trigger, c):
-        """Start fetching feeds. Usage: .rss start"""
+        """Start fetching feeds. Usage: !rss start"""
         bot.reply("Okay, I'll start fetching RSS feeds..." if not self.running else
                   "Continuing to fetch RSS feeds.")
         LOGGER.debug("RSS started.")
         self.running = True
 
     def _rss_stop(self, bot, trigger, c):
-        """Stop fetching feeds. Usage: .rss stop"""
+        """Stop fetching feeds. Usage: !rss stop"""
         bot.reply("Okay, I'll stop fetching RSS feeds..." if self.running else
                   "Not currently fetching RSS feeds.")
         LOGGER.debug("RSS stopped.")
@@ -127,10 +125,10 @@ class RSSManager:
     def _rss_add(self, bot, trigger, c):
         """Add a feed to a channel, or modify an existing one.
         Set mIRC-style foreground and background colour indices using fg and bg.
-        Usage: .rss add <#channel> <Feed_Name> <URL> [fg] [bg]
+        Usage: !rss add <#channel> <Feed_Name> <URL> [fg] [bg]
         """
         pattern = r'''
-            ^\.rss\s+add
+            ^\!rss\s+add
             \s+([~&#+!][^\s,]+)   # channel
             \s+("[^"]+"|[\w-]+)  # name, which can contain anything but quotes if quoted
             \s+(\S+)             # url
@@ -167,10 +165,10 @@ class RSSManager:
 
     def _rss_del(self, bot, trigger, c):
         """Remove one or all feeds from one or all channels.
-        Usage: .rss del [#channel] [Feed_Name]
+        Usage: !rss del [#channel] [Feed_Name]
         """
         pattern = r"""
-            ^\.rss\s+del
+            ^\!rss\s+del
             (?:\s+([~&#+!][^\s,]+))?  # channel (optional)
             (?:\s+("[^"]+"|[\w-]+))? # name (optional)
             """
@@ -198,19 +196,19 @@ class RSSManager:
         return True
 
     def _rss_enable(self, bot, trigger, c):
-        """Enable a feed or feeds. Usage: .rss enable [#channel] [Feed_Name]"""
+        """Enable a feed or feeds. Usage: !rss enable [#channel] [Feed_Name]"""
         return self._toggle(bot, trigger, c)
 
     def _rss_disable(self, bot, trigger, c):
-        """Disable a feed or feeds. Usage: .rss disable [#channel] [Feed_Name]"""
+        """Disable a feed or feeds. Usage: !rss disable [#channel] [Feed_Name]"""
         return self._toggle(bot, trigger, c)
 
     def _toggle(self, bot, trigger, c):
-        """Enable or disable a feed or feeds. Usage: .rss <enable|disable> [#channel] [Feed_Name]"""
+        """Enable or disable a feed or feeds. Usage: !rss <enable|disable> [#channel] [Feed_Name]"""
         command = trigger.group(3)
 
         pattern = r"""
-            ^\.rss\s+(enable|disable) # command
+            ^\!rss\s+(enable|disable) # command
             (?:\s+([~&#+!][^\s,]+))?   # channel (optional)
             (?:\s+("[^"]+"|[\w-]+))?  # name (optional)
             """
@@ -239,9 +237,9 @@ class RSSManager:
         return True
 
     def _rss_list(self, bot, trigger, c):
-        """Get information on all feeds in the database. Usage: .rss list [#channel] [Feed_Name]"""
+        """Get information on all feeds in the database. Usage: !rss list [#channel] [Feed_Name]"""
         pattern = r"""
-            ^\.rss\s+list
+            ^\!rss\s+list
             (?:\s+([~&#+!][^\s,]+))?  # channel (optional)
             (?:\s+("[^"]+"|[\w-]+))? # name (optional)
             """
@@ -274,23 +272,23 @@ class RSSManager:
 
         for feed in filtered:
             bot.say("  {0} {1} {2}{3} {4} {5}".format(
-                    feed.channel,
-                    colour_text(feed.name, feed.fg, feed.bg),
-                    feed.url,
-                    " (disabled)" if not feed.enabled else '',
-                    feed.fg, feed.bg))
+                feed.channel,
+                colour_text(feed.name, feed.fg, feed.bg),
+                feed.url,
+                " (disabled)" if not feed.enabled else '',
+                feed.fg, feed.bg))
 
     def _rss_fetch(self, bot, trigger, c):
-        """Force all RSS feeds to be fetched immediately. Usage: .rss fetch"""
+        """Force all RSS feeds to be fetched immediately. Usage: !rss fetch"""
         read_feeds(bot, True)
 
     def _rss_help(self, bot, trigger, c):
-        """Get help on any of the RSS feed commands. Usage: .rss help <command>"""
+        """Get help on any of the RSS feed commands. Usage: !rss help <command>"""
         command = trigger.group(4)
         if command in self.actions:
             self._show_doc(bot, command)
         else:
-            bot.reply("For help on a command, type: .rss help <command>")
+            bot.reply("For help on a command, type: !rss help <command>")
             bot.reply("Available RSS commands: " + ', '.join(self.actions))
 
 
@@ -385,7 +383,7 @@ def read_feeds(bot, force=False):
 
         # check if article is new, and skip otherwise
         if (feed.title == entry.title and feed.link == entry.link
-                and feed.etag == feed_etag and feed.modified == feed_modified):
+            and feed.etag == feed_etag and feed.modified == feed_modified):
             LOGGER.info(u"Skipping previously read entry: [%s] %s",
                         feed.name, entry.title)
             continue

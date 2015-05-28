@@ -23,3 +23,5 @@ willie.wiki/*
 .settings
 .project
 .pydevproject
+
+default.cfg
