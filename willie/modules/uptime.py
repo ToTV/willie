@@ -7,6 +7,7 @@ Licensed under the Eiffel Forum License 2.
 http://willie.dftba.net
 """
 from __future__ import unicode_literals
+from totv.theme import EntityGroup, Entity, render
 
 from willie.module import commands
 import datetime
@@ -23,5 +24,7 @@ def uptime(bot, trigger):
     delta = datetime.timedelta(seconds=round((datetime.datetime.utcnow() -
                                               bot.memory["uptime"])
                                              .total_seconds()))
-    bot.say("I've been sitting here for {} and I keep "
-            "going!".format(delta))
+    bot.say(render(items=[
+        EntityGroup([Entity("Uptime")]),
+        EntityGroup([Entity("I've been sitting here for {} and I keep going!".format(delta))])
+    ]))
