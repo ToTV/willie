@@ -14,6 +14,7 @@ import pygeoip
 import socket
 import os
 import gzip
+from totv.theme import EntityGroup, Entity, render
 
 urlretrieve = None
 try:
@@ -110,11 +111,16 @@ def ip(bot, trigger):
     gi_city = pygeoip.GeoIP(geolite_city_filepath)
     gi_org = pygeoip.GeoIP(geolite_ASN_filepath)
     host = socket.getfqdn(query)
-    response = "[IP/Host Lookup] Hostname: %s" % host
+
+    items = [EntityGroup([Entity("Host Lookup")])]
+    grouping = EntityGroup()
+    grouping.append(Entity("Hostname", host))
+
     try:
-        response += " | Location: %s" % gi_city.country_name_by_name(query)
+        location = gi_city.country_name_by_name(query)
     except AttributeError:
-        response += ' | Location: Unknown'
+        location = 'Unknown'
+    grouping.append(Entity("Location", location))
 
     region_data = gi_city.region_by_name(query)
     try:
@@ -122,11 +128,14 @@ def ip(bot, trigger):
     except KeyError:
         region = region_data['region_name']  # pygeoip < 0.3.0
     if region:
-        response += " | Region: %s" % region
+        grouping.append(Entity("Region", region))
 
     isp = gi_org.org_by_name(query)
-    response += " | ISP: %s" % isp
-    bot.say(response)
+    if isp:
+        grouping.append(Entity("ISP", isp))
+    items.append(grouping)
+
+    bot.say(render(items=items))
 
 
 if __name__ == "__main__":
