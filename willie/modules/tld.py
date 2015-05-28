@@ -7,11 +7,11 @@ Licensed under the Eiffel Forum License 2.
 http://willie.dftba.net
 """
 from __future__ import unicode_literals
-
-from willie import web
-from willie.module import commands, example
 import re
 import sys
+from willie import web
+from willie.module import commands, example
+from totv.theme import render_error, EntityGroup, Entity, render
 if sys.version_info.major >= 3:
     unicode = str
 
@@ -60,7 +60,15 @@ def gettld(bot, trigger):
                 dict_val[key] = r_tag.sub('', dict_val[key])
             if len(dict_val["notes"]) > 400:
                 dict_val["notes"] = dict_val["notes"][:400] + "..."
-            reply = "%s (%s, %s). IDN: %s, DNSSEC: %s, SLD: %s" % (dict_val["country"], dict_val["expl"], dict_val["notes"], dict_val["idn"], dict_val["dnssec"], dict_val["sld"])
+            items = [
+                EntityGroup([Entity("TLD")]),
+                EntityGroup([
+                    Entity("Country", "{} ({}, {})".format(dict_val["country"], dict_val["expl"], dict_val["notes"])),
+                    Entity("IDN", dict_val["idn"]),
+                    Entity("DNSSEC", dict_val["dnssec"]),
+                    Entity("SLD", dict_val["sld"])
+                ])
+            ]
+            bot.say(render(items=items))
         else:
-            reply = "No matches found for TLD: {0}".format(unicode(trigger.group(2)))
-        bot.reply(reply)
+            bot.say(render_error("No matches found for TLD: {0}".format(unicode(trigger.group(2)))), "tld")
