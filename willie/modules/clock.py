@@ -8,6 +8,7 @@ Licensed under the Eiffel Forum License 2.
 http://willie.dfbta.net
 """
 from __future__ import unicode_literals
+from totv.limit import RateLimit
 
 try:
     import pytz
@@ -25,6 +26,7 @@ def configure(config):
                            'Preferred time format (http://strftime.net)', '%F - %T%Z')
 
 
+@RateLimit
 @commands('time')
 @example('.time America/New_York')
 def f_time(bot, trigger):

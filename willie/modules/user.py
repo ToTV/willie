@@ -2,6 +2,7 @@
 from __future__ import print_function, unicode_literals
 import json
 import re
+from totv.limit import RateLimit
 from willie import module
 
 from totv import tracker
@@ -20,6 +21,7 @@ def setup(bot):
 
 
 # @willie.module.rule('(user|u)\s?(\w*)')
+@RateLimit
 @module.commands('user', 'u')
 def user(bot, trigger):
     if trigger.group(2):
