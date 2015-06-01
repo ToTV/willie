@@ -5,6 +5,7 @@ Simple client to interact with the backend tracker instance.
 from __future__ import print_function, unicode_literals, absolute_import
 import requests
 from willie.module import commands
+from totv.theme import render_error, render, Entity, EntityGroup
 
 
 class TrackerClient(object):
@@ -100,7 +101,7 @@ def torrent_info(bot, trigger):
     client = TrackerClient(bot.config.tracker.host)
     info_hash = trigger.group(2).strip()
     torrent = client.torrent_get(info_hash)
-    if torrent.get("enabled", False):
+    if torrent and torrent.get("enabled", False):
         top_speed_up = 0
         top_speed_dn = 0
         uid_up = 0
@@ -112,16 +113,18 @@ def torrent_info(bot, trigger):
             if peer.get('speed_dn_max', 0):
                 top_speed_dn = peer.get('speed_dn_max', 0)
                 uid_dn = peer.get('username', "n/a")
-        bot.say(
-            "[Swarm {}] Seeders: {} Leechers: {} Snatches: {} Top Speed Up: {:.2f} MiB/s ({}) Top Speed Dn: {:.2f} MiB/s ({})".format(
-                torrent.get("name", info_hash[0:4]),
-                torrent.get("seeders", 0),
-                torrent.get("leechers", 0),
-                torrent.get("snatches", 0),
-                top_speed_up / 1024 / 1024,  # yolo
-                uid_up,
-                top_speed_dn / 1024 / 1024,  # yolo
-                uid_dn
-            ))
+        resp = render(items=[
+            EntityGroup([Entity("Swarm")]),
+            EntityGroup([Entity(torrent.get("name", info_hash[0:4]))]),
+            EntityGroup([
+                Entity("Seeders", torrent.get("seeders", 0)),
+                Entity("Leechers", torrent.get("leechers", 0)),
+                Entity("Snatches", torrent.get("snatches", 0)),
+                Entity("Top Speed Up [{}]".format(uid_up), "{:.2f} MiB/s".format(top_speed_up / 1024.0 / 1024.0)),
+                Entity("Top Speed Dn [{}]".format(uid_dn), "{:.2f} MiB/s".format(top_speed_dn / 1024.0 / 1024.0)),
+
+            ])
+        ])
+        bot.say(resp)
     else:
-        bot.reply("Torrent deleted")
+        bot.say(render_error("Infohash Not found", "swarm"))
