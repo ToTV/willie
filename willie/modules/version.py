@@ -10,6 +10,8 @@ http://willie.dftba.net
 from __future__ import unicode_literals
 
 from datetime import datetime
+from totv.theme import EntityGroup, Entity
+from totv.theme import render
 import willie
 import re
 from os import path
@@ -38,13 +40,13 @@ def version(bot, trigger):
     release = willie.__version__
     sha = git_info()
     if not sha:
-        msg = 'Willie v. ' + release
-        if release[-4:] == '-git':
-            msg += ' at unknown commit.'
-        bot.reply(msg)
-        return
-
-    bot.reply("Willie v. {} at commit: {}".format(willie.__version__, sha))
+        bot.say(render(items=[
+            EntityGroup(["Version"]),
+            EntityGroup(["Willie"]),
+            EntityGroup([Entity("Ver", willie.__version__), Entity("Commit", sha)])
+        ]))
+    else:
+        bot.reply("Willie v. {} at commit: {}".format(willie.__version__, sha))
 
 
 @willie.module.rule('\x01VERSION\x01')

@@ -40,8 +40,8 @@ def duck_search(query):
     query = query.replace('!', '')
     uri = 'http://duckduckgo.com/html/?q=%s&kl=uk-en' % query
     b = web.get(uri)
-    if 'web-result"' in bytes:  # filter out the adds on top of the page
-        b = bytes.split(b'web-result"')[1]
+    if 'web-result"' in b:  # filter out the adds on top of the page
+        b = b.split('web-result"')[1]
     m = r_duck.search(b)
     if m:
         return web.decode(m.group(1))
@@ -98,7 +98,7 @@ def search(bot, trigger):
     du = duck_search(query) or '-'
 
     if bu == du:
-        result = '%s (b, d)' % gu
+        result = '%s (b, d)' % du
     else:
         if len(bu) > 150:
             bu = '(extremely long link)'

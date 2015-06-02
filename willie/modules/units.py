@@ -43,7 +43,7 @@ def temperature(bot, trigger):
     try:
         source = find_temp.match(trigger.group(2)).groups()
     except (AttributeError, TypeError):
-        bot.reply("That's not a valid temperature.")
+        bot.say(render_error("That's not a valid temperature.", "Temp"))
         return NOLIMIT
     unit = source[1].upper()
     numeric = float(source[0])

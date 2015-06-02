@@ -1,5 +1,6 @@
 # coding=utf-8
 from __future__ import absolute_import, print_function, unicode_literals
+from html import unescape
 import threading
 import json
 import redis
@@ -24,4 +25,4 @@ def queue():
         if message:
             # do something with the message
             data = json.loads(message['data'].decode('utf8'))
-            botInstance.write(('PRIVMSG', data['channel']), data['msg'])
+            botInstance.write(('PRIVMSG', data['channel']), unescape(data['msg']))

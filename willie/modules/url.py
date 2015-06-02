@@ -87,8 +87,7 @@ def setup(bot=None):
     if bot.config.has_option('url', 'exclusion_char'):
         exclusion_char = bot.config.url.exclusion_char
 
-    url_finder = re.compile(r'(?u)(%s?(?:http|https|ftp)(?:://\S+))' %
-                            (exclusion_char))
+    url_finder = re.compile(r'(?u)(%s?(?:http|https|ftp)(?:://\S+))' % exclusion_char)
 
 
 @commands('title')

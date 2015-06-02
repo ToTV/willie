@@ -127,8 +127,10 @@ def weather(bot, trigger):
     if not location:
         woeid = bot.db.get_nick_value(trigger.nick, 'woeid')
         if not woeid:
-            err_str = "I don't know where you live. Give me a location, like .weather " \
-                      "London, or tell me where you live by saying .setlocation London, for example."
+            err_str = "I don't know where you live. Give me a location, like {0}weather " \
+                      "London, or tell me where you live by saying {0}setlocation London, for example.".format(
+                bot.config.core.prefix
+            )
 
             return bot.msg(trigger.sender, render_error(err_str, "weather"))
     else:

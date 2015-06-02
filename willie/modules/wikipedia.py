@@ -7,6 +7,7 @@ Licensed under the Eiffel Forum License 2.
 http://willie.dftba.net
 """
 from __future__ import unicode_literals
+from totv.theme import EntityGroup, Entity, render
 from willie import web, tools
 from willie.module import NOLIMIT, commands, example, rule
 import json
@@ -64,10 +65,14 @@ def say_snippet(bot, server, query, show_url=True):
     page_name = query.replace('_', ' ')
     query = query.replace(' ', '_')
     snippet = mw_snippet(server, query)
-    msg = '[WIKIPEDIA] {} | "{}"'.format(page_name, snippet)
+    items = [
+        EntityGroup([Entity("Wiki")]),
+        EntityGroup([Entity(page_name)]),
+        EntityGroup([Entity(snippet)])
+    ]
     if show_url:
-        msg = msg + ' | https://{}/wiki/{}'.format(server, query)
-    bot.say(msg)
+        items.append(EntityGroup([Entity('https://{}/wiki/{}'.format(server, query))]))
+    bot.say(render(items=items))
 
 
 def mw_snippet(server, query):
@@ -118,7 +123,7 @@ def wikipedia(bot, trigger):
             lang = customlang.group(2)
 
     if trigger.group(2) is None:
-        bot.reply("What do you want me to look up?")
+        bot.say("What do you want me to look up?")
         return NOLIMIT
 
     query = trigger.group(2)
