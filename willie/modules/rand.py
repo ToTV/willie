@@ -2,11 +2,14 @@
 """
 rand.py - Rand Module
 Copyright 2013, Ari Koivula, <ari@koivu.la>
+Copyright 2015, toor <toor@titansof.tv>
+
 Licensed under the Eiffel Forum License 2.
 
 http://willie.dftba.net
 """
 from __future__ import unicode_literals
+from totv.theme import render_error, render, Entity, EntityGroup
 
 from willie.module import commands, example
 import random
@@ -35,13 +38,16 @@ def rand(bot, trigger):
             low = 0
             high = sys.maxsize
     except (ValueError, TypeError):
-        return bot.reply("Arguments must be of integer type")
+        return bot.say(render_error("Arguments must be of integer type", "rand"))
 
     if low > high:
         low, high = high, low
 
     number = random.randint(low, high)
-    bot.reply("random(%d, %d) = %d" % (low, high, number))
+    return bot.say(render(items=[
+        EntityGroup([Entity("Random")]),
+        EntityGroup([Entity("random({}, {})".format(low, high)), Entity("Selected", number)]),
+    ]))
 
 
 if __name__ == "__main__":

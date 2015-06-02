@@ -52,7 +52,6 @@ def lastfm(bot, trigger):
     else:
         loved = 0
         playcount = 'Unknown'
-
     try:
         if loved > 0:
             prefix = '\x035' + u'\u2665' + '\x03'
