@@ -166,14 +166,8 @@ def user_join(bot, trigger):
 
 @module.interval(600)
 def bonus(bot):
-    channels = bot.privileges
-    online_users = []
-    for channel in channels:
-        if channel == '#TitansofTV':
-            online_users = bot.privileges[channel]
-
-    data = json.dumps(online_users)
-    tracker.bot_api_request('/irc_bonus', 'POST', data)
+    online_users = [bot.privileges[c] for c in bot.privileges if c == '#TitansofTV']
+    tracker.bot_api_request('/irc_bonus', 'POST', json.dumps(online_users))
 
 
 def split_hostmask(hostmask):
