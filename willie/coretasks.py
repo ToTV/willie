@@ -20,6 +20,7 @@ import re
 import sys
 import time
 import willie
+import willie.module
 from willie.tools import Identifier, iteritems
 import base64
 from willie.logger import get_logger
@@ -32,16 +33,16 @@ LOGGER = get_logger(__name__)
 
 def auth_after_register(bot):
     """Do NickServ/AuthServ auth"""
-    if bot.config.core.auth_method == 'nickserv' or bot.config.core.nickserv_password:
-        nickserv_name = bot.config.core.auth_target or bot.config.core.nickserv_name or 'NickServ'
+    if bot.config.core.auth_method == 'nickserv':
+        nickserv_name = bot.config.core.auth_target or 'NickServ'
         bot.msg(
             nickserv_name,
-            'IDENTIFY %s' % bot.config.core.nickserv_password
+            'IDENTIFY %s' % bot.config.core.auth_password
         )
 
-    elif bot.config.core.auth_method == 'authserv' or bot.config.core.authserv_password:
-        account = bot.config.core.auth_username or bot.config.core.authserv_account
-        password = bot.config.core.auth_password or bot.config.core.authserv_password
+    elif bot.config.core.auth_method == 'authserv':
+        account = bot.config.core.auth_username
+        password = bot.config.core.auth_password
         bot.write((
             'AUTHSERV auth',
             account + ' ' + password
@@ -82,13 +83,13 @@ def startup(bot, trigger):
     if bot.config.has_option('core', 'throttle_join'):
         throttle_rate = int(bot.config.core.throttle_join)
         channels_joined = 0
-        for channel in bot.config.core.get_list('channels'):
+        for channel in bot.config.core.channels:
             channels_joined += 1
             if not channels_joined % throttle_rate:
                 time.sleep(1)
             bot.join(channel)
     else:
-        for channel in bot.config.core.get_list('channels'):
+        for channel in bot.config.core.channels:
             bot.join(channel)
 
 
@@ -447,9 +448,9 @@ def blocks(bot, trigger):
         'huh': "I could not figure out what you wanted to do.",
     }
 
-    masks = set(s for s in bot.config.core.get_list('host_blocks') if s != '')
+    masks = set(s for s in bot.config.core.host_blocks if s != '')
     nicks = set(Identifier(nick)
-                for nick in bot.config.core.get_list('nick_blocks')
+                for nick in bot.config.core.nick_blocks
                 if nick != '')
     text = trigger.group().split()
 

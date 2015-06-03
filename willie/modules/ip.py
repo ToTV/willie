@@ -1,15 +1,11 @@
 # coding=utf8
-"""
-ip.py - Willie IP Lookup Module
-Copyright 2011, Dimitri Molenaars, TyRope.nl,
-Copyright © 2013, Elad Alfassa <elad@fedoraproject.org>
-Licensed under the Eiffel Forum License 2.
+"""GeoIP lookup module"""
+# Copyright 2011, Dimitri Molenaars, TyRope.nl,
+# Copyright © 2013, Elad Alfassa <elad@fedoraproject.org>
+# Licensed under the Eiffel Forum License 2.
 
-http://willie.dftba.net
-"""
 from __future__ import unicode_literals
 
-import re
 import pygeoip
 import socket
 import os
@@ -28,22 +24,22 @@ except ImportError:
     except ImportError:
         pass
 
+from willie.config.types import StaticSection, FilenameAttribute
 from willie.module import commands, example
 from willie.logger import get_logger
 
 LOGGER = get_logger(__name__)
 
 
-def configure(config):
-    """
+class GeoipSection(StaticSection):
+    GeoIP_db_path = FilenameAttribute('GeoIP_db_path', directory=True)
+    """Path of the directory containing the GeoIP db files."""
 
-    | [ip] | example | purpose |
-    | ---- | ------- | ------- |
-    | GeoIP_db_path | None | Full path for the GeoIP database. If not specified or None, the bot will try to look for the database in /usr/share/GeoIP, and if it's not there it'll try to automatically download the database into its configuration directory |
-    """
-    if config.option('Configure a custom location for the GeoIP db?', False):
-        config.add_section('ip')
-        config.interactive_add('ip', 'GeoIP_db_path', 'Full path to the GeoIP database', None)
+
+def configure(config):
+    config.define_section('ip', GeoipSection)
+    config.ip.configure_setting('GeoIP_db_path',
+                                'Path of the GeoIP db files')
 
 
 def _decompress(source, target, delete_after_decompression=True):
@@ -69,9 +65,9 @@ def _find_geoip_db(bot):
             LOGGER.warning(
                 'GeoIP path configured but DB not found in configured path'
             )
-    if (os.path.isfile(os.path.join(bot.config.homedir, 'GeoLiteCity.dat')) and
-            os.path.isfile(os.path.join(bot.config.homedir, 'GeoIPASNum.dat'))):
-        return bot.config.homedir
+    if (os.path.isfile(os.path.join(bot.config.core.homedir, 'GeoLiteCity.dat')) and
+            os.path.isfile(os.path.join(bot.config.core.homedir, 'GeoIPASNum.dat'))):
+        return bot.config.core.homedir
     elif (os.path.isfile(os.path.join('/usr/share/GeoIP', 'GeoLiteCity.dat')) and
             os.path.isfile(os.path.join('/usr/share/GeoIP', 'GeoIPASNum.dat'))):
         return '/usr/share/GeoIP'
@@ -80,13 +76,13 @@ def _find_geoip_db(bot):
         bot.say('Downloading GeoIP database, please wait...')
         geolite_city_url = 'http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz'
         geolite_ASN_url = 'http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz'
-        geolite_city_filepath = os.path.join(bot.config.homedir, 'GeoLiteCity.dat.gz')
-        geolite_ASN_filepath = os.path.join(bot.config.homedir, 'GeoIPASNum.dat.gz')
+        geolite_city_filepath = os.path.join(bot.config.core.homedir, 'GeoLiteCity.dat.gz')
+        geolite_ASN_filepath = os.path.join(bot.config.core.homedir, 'GeoIPASNum.dat.gz')
         urlretrieve(geolite_city_url, geolite_city_filepath)
         urlretrieve(geolite_ASN_url, geolite_ASN_filepath)
         _decompress(geolite_city_filepath, geolite_city_filepath[:-3])
         _decompress(geolite_ASN_filepath, geolite_ASN_filepath[:-3])
-        return bot.config.homedir
+        return bot.config.core.homedir
     else:
         return False
 

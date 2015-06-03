@@ -31,15 +31,17 @@ The configuration function, if used, must be declared with the signature
 ``configure(config)``. To add options, use ``interactive_add``, ``add_list``
 and ``add_option``.
 """
-#Copyright 2012, Edward Powell, embolalia.net
-#Copyright © 2012, Elad Alfassa <elad@fedoraproject.org>
-#Licensed under the Eiffel Forum License 2.
+# Copyright 2012, Edward Powell, embolalia.net
+# Copyright © 2012, Elad Alfassa <elad@fedoraproject.org>
+# Licensed under the Eiffel Forum License 2.
 
 from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import absolute_import
 
-from willie.tools import iteritems
+from willie.tools import iteritems, stderr
+import willie.tools
+import willie.loader
 import os
 import sys
 try:
@@ -48,7 +50,8 @@ except ImportError:
     import configparser as ConfigParser
 import getpass
 import imp
-import willie.bot
+import willie.config.core_section
+from willie.config.types import StaticSection
 if sys.version_info.major >= 3:
     unicode = str
     basestring = str
@@ -85,46 +88,15 @@ class Config(object):
         self.parser = ConfigParser.RawConfigParser(allow_no_value=True)
         if load:
             self.parser.read(self.filename)
-
-            if not ignore_errors:
-                #Sanity check for the configuration file:
-                if not self.parser.has_section('core'):
-                    raise ConfigurationError('Core section missing!')
-                if not self.parser.has_option('core', 'nick'):
-                    raise ConfigurationError(
-                        'Bot IRC nick not defined,'
-                        ' expected option `nick` in [core] section'
-                    )
-                if not self.parser.has_option('core', 'owner'):
-                    raise ConfigurationError(
-                        'Bot owner not defined,'
-                        ' expected option `owner` in [core] section'
-                    )
-                if not self.parser.has_option('core', 'host'):
-                    raise ConfigurationError(
-                        'IRC server address not defined,'
-                        ' expceted option `host` in [core] section'
-                    )
-
-            #Setting defaults:
-            if not self.parser.has_option('core', 'port'):
-                self.parser.set('core', 'port', '6667')
-            if not self.parser.has_option('core', 'user'):
-                self.parser.set('core', 'user', 'willie')
-            if not self.parser.has_option('core', 'name'):
-                self.parser.set('core', 'name',
-                                'Willie Embosbot, http://willie.dftba.net')
-            if not self.parser.has_option('core', 'prefix'):
-                self.parser.set('core', 'prefix', r'\.')
-            if not self.parser.has_option('core', 'admins'):
-                self.parser.set('core', 'admins', '')
-            if not self.parser.has_option('core', 'verify_ssl'):
-                self.parser.set('core', 'verify_ssl', 'True')
-            if not self.parser.has_option('core', 'timeout'):
-                self.parser.set('core', 'timeout', '120')
+            # TODO ignore errors?
         else:
             self.parser.add_section('core')
+        self.define_section('core', willie.config.core_section.CoreSection)
         self.get = self.parser.get
+
+    @property
+    def homedir(self):
+        return os.path.dirname(self.filename)
 
     def save(self):
         """Save all changes to the config file."""
@@ -143,6 +115,18 @@ class Config(object):
             return self.parser.add_section(name)
         except ConfigParser.DuplicateSectionError:
             return False
+
+    def define_section(self, name, cls_):
+        """Define the available settings in a section.
+
+        ``cls_`` must be a subclass of ``StaticSection``. If the section has
+        already been defined with a different class, ValueError is raised."""
+        if not issubclass(cls_, StaticSection):
+            raise ValueError("Class must be a subclass of StaticSection.")
+        current = getattr(self, name)
+        if not isinstance(current, self.ConfigSection) and not current.__class__ == cls_:
+            raise ValueError("Can not re-define class for section.")
+        setattr(self, name, cls_(self, name))
 
     def has_option(self, section, name):
         """Check if option ``name`` exists under section ``section``."""
@@ -190,14 +174,11 @@ class Config(object):
             return value
 
     def __getattr__(self, name):
-        """"""
         if name in self.parser.sections():
             items = self.parser.items(name)
             section = self.ConfigSection(name, items, self)  # Return a section
             setattr(self, name, section)
             return section
-        elif self.parser.has_option('core', name):
-            return self.parser.get('core', name)  # For backwards compatibility
         else:
             raise AttributeError("%r object has no attribute %r"
                                  % (type(self).__name__, name))
@@ -298,108 +279,30 @@ class Config(object):
             ans = d
         return ans.lower() == 'y'
 
-    def _core(self):
-        self.interactive_add('core', 'nick', 'Enter the nickname for your bot',
-                             'Willie')
-        self.interactive_add('core', 'host', 'Enter the server to connect to',
-                             'irc.dftba.net')
-        self.add_option('core', 'use_ssl', 'Should the bot connect with SSL')
-        if self.use_ssl == 'True':
-            default_port = '6697'
-        else:
-            default_port = '6667'
-        self.interactive_add('core', 'port', 'Enter the port to connect on',
-                             default_port)
-        self.interactive_add(
-            'core', 'owner',
-            "Enter your own IRC name (or that of the bot's owner)"
-        )
-        c = 'Enter the channels to connect to by default, one at a time.' + \
-            ' When done, hit enter again.'
-        self.add_list('core', 'channels', c, 'Channel:')
-
     def _modules(self):
         home = os.getcwd()
         modules_dir = os.path.join(home, 'modules')
-        filenames = self.enumerate_modules()
+        filenames = willie.loader.enumerate_modules(self)
         os.sys.path.insert(0, modules_dir)
-        for name, filename in iteritems(filenames):
+        for name, mod_spec in iteritems(filenames):
+            path, type_ = mod_spec
             try:
-                module = imp.load_source(name, filename)
+                module, _ = willie.loader.load_module(name, path, type_)
             except Exception as e:
-                print("Error loading %s: %s (in config.py)"
-                      % (name, e), file=sys.stderr)
+                filename, lineno = willie.tools.get_raising_file_and_line()
+                rel_path = os.path.relpath(filename, os.path.dirname(__file__))
+                raising_stmt = "%s:%d" % (rel_path, lineno)
+                stderr("Error loading %s: %s (%s)" % (name, e, raising_stmt))
             else:
-                if hasattr(module, 'configure'):
+                prompt = name + ' module'
+                if module.__doc__:
+                    doc = module.__doc__.split('\n', 1)[0]
+                    if doc:
+                        prompt = doc
+                prompt = 'Configure ' + prompt
+                if hasattr(module, 'configure') and self.option(prompt, False):
                     module.configure(self)
         self.save()
-
-    def enumerate_modules(self, show_all=False):
-        """Map the names of modules to the location of their file.
-
-        *Availability: 4.0+*
-
-        Return a dict mapping the names of modules to the location of their
-        file.  This searches the regular modules directory and all directories
-        specified in the `core.extra` attribute of the `config` object. If two
-        modules have the same name, the last one to be found will be returned
-        and the rest will be ignored. Modules are found starting in the regular
-        directory, followed by `~/.willie/modules`, and then through the extra
-        directories in the order that the are specified.
-
-        If `show_all` is given as `True`, the `enable` and `exclude`
-        configuration options will be ignored, and all modules will be shown
-        (though duplicates will still be ignored as above).
-
-        """
-        modules = {}
-
-        # First, add modules from the regular modules directory
-        main_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        modules_dir = os.path.join(main_dir, 'modules')
-        for fn in os.listdir(modules_dir):
-            if fn.endswith('.py') and not fn.startswith('_'):
-                modules[fn[:-3]] = os.path.join(modules_dir, fn)
-        # Next, look in ~/.willie/modules
-        if self.core.homedir is not None:
-            home_modules_dir = os.path.join(self.core.homedir, 'modules')
-        else:
-            home_modules_dir = os.path.join(os.path.expanduser('~'), '.willie',
-                                            'modules')
-        if not os.path.isdir(home_modules_dir):
-            os.makedirs(home_modules_dir)
-        for fn in os.listdir(home_modules_dir):
-            if fn.endswith('.py') and not fn.startswith('_'):
-                modules[fn[:-3]] = os.path.join(home_modules_dir, fn)
-
-        # Last, look at all the extra directories. (get_list returns [] if
-        # there are none or the option isn't defined, so it'll just skip this
-        # bit)
-        for directory in self.core.get_list('extra'):
-            for fn in os.listdir(directory):
-                if fn.endswith('.py') and not fn.startswith('_'):
-                    modules[fn[:-3]] = os.path.join(directory, fn)
-
-        # If caller wants all of them, don't apply white and blacklists
-        if show_all:
-            return modules
-
-        # Apply whitelist, if present
-        enable = self.core.get_list('enable')
-        if enable:
-            enabled_modules = {}
-            for module in enable:
-                if module in modules:
-                    enabled_modules[module] = modules[module]
-            modules = enabled_modules
-
-        # Apply blacklist, if present
-        exclude = self.core.get_list('exclude')
-        for module in exclude:
-            if module in modules:
-                del modules[module]
-
-        return modules
 
 
 def wizard(section, config=None):
@@ -440,7 +343,7 @@ def create_config(configpath):
           " to create your configuration file:\n")
     try:
         config = Config(configpath, os.path.isfile(configpath))
-        config._core()
+        willie.config.core_section.configure(config)
         if config.option(
             'Would you like to see if there are any modules'
             ' that need configuring'

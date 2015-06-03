@@ -71,7 +71,9 @@ class PreTrigger(object):
         if self.event == 'PRIVMSG' or self.event == 'NOTICE':
             intent_match = PreTrigger.intent_regex.match(self.args[-1])
             if intent_match:
-                self.tags['intent'], self.args[-1] = intent_match.groups()
+                intent, message = intent_match.groups()
+                self.tags['intent'] = intent
+                self.args[-1] = message or ''
 
 
 class Trigger(unicode):
@@ -142,7 +144,7 @@ class Trigger(unicode):
             )
 
         self._admin = any(match_host_or_nick(item)
-                         for item in config.core.get_list('admins'))
+                         for item in config.core.admins)
         self._owner = match_host_or_nick(config.core.owner)
         self._admin = self.admin or self.owner
 
