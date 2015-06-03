@@ -385,7 +385,7 @@ def recieve_cap_ls_reply(bot, trigger):
 
     # If we want to do SASL, we have to wait before we can send CAP END. So if
     # we are, wait on 903 (SASL successful) to send it.
-    if bot.config.core.auth_method == 'sasl' or bot.config.core.sasl_password:
+    if bot.config.core.auth_method == 'sasl':
         bot.write(('CAP', 'REQ', 'sasl'))
     else:
         bot.write(('CAP', 'END'))

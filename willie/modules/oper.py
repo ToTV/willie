@@ -7,7 +7,7 @@ from willie import module
 @module.event('001')
 @module.rule('.*')
 def start(bot, trigger):
-    bot.write(('oper', bot.config.core.oper_name, bot.config.core.oper_pass))
+    bot.write(('oper', bot.config.oper.name, bot.config.oper.password))
 
 
 @module.event('251')

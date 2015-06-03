@@ -43,26 +43,29 @@ def version(bot, trigger):
         bot.say(render(items=[
             EntityGroup(["Version"]),
             EntityGroup(["Willie"]),
-            EntityGroup([Entity("Ver", willie.__version__), Entity("Commit", sha)])
+            EntityGroup([Entity("Ver", willie.__version__)])
         ]))
     else:
-        bot.reply("Willie v. {} at commit: {}".format(willie.__version__, sha))
+        bot.say(render(items=[
+            EntityGroup(["Version"]),
+            EntityGroup(["Willie"]),
+            EntityGroup([Entity("Ver", willie.__version__), Entity("Commit", sha)])
+        ]))
 
 
 @willie.module.intent('VERSION')
 @willie.module.rate(20)
 @willie.module.rule('.*')
 def ctcp_version(bot, trigger):
-    print('wat')
     bot.write(('NOTICE', trigger.nick),
-              '\x01VERSION Willie IRC Bot version %s\x01' % willie.__version__)
+              '\x01VERSION %s\x01' % willie.__version__)
 
 
 @willie.module.rule('\x01SOURCE\x01')
 @willie.module.rate(20)
 def ctcp_source(bot, trigger):
     bot.write(('NOTICE', trigger.nick),
-              '\x01SOURCE https://github.com/Embolalia/willie/\x01')
+              '\x01SOURCE https://github.com/ToTV/willie/\x01')
 
 
 @willie.module.rule('\x01PING\s(.*)\x01')

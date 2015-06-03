@@ -21,12 +21,10 @@ class TrackerClient(object):
             resp = requests.delete(self._make_url(path), verify=False)
         else:
             raise Exception("no")
-        print(resp)
         return resp
 
     def _make_url(self, path):
         url = "{}{}".format(self._host, path)
-        print(url)
         return url
 
     def torrent_get(self, info_hash):

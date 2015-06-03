@@ -1,11 +1,12 @@
 # coding=utf-8
 from __future__ import absolute_import, print_function, unicode_literals
+import logging
 from urllib import parse
-
 import requests
-
 from willie.module import commands
 from totv.theme import render, EntityGroup, Entity, render_error
+
+logger = logging.getLogger()
 
 
 @commands('ud', 'urbandictionary')
@@ -25,8 +26,9 @@ def urbandictionary(bot, trigger):
 def urbandictionaryrandom(bot, trigger):
     try:
         data = requests.get("http://api.urbandictionary.com/v0/random").json()
-    except Exception as err:
-        print(err)
+    except Exception:
+        logger.exception("Failed to fetch UD api data")
+        render_error("Failed to fetch data over API, server down probably")
     else:
         show_ud(bot, data)
 
