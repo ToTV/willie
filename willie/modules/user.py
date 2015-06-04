@@ -122,18 +122,17 @@ def lock_down(bot, trigger):
 
 @module.event('JOIN')
 @module.rule('.*')
-def user_join(bot, trigger):
+def userJoin(bot, trigger):
     if re.search('titansof\.tv', trigger.host.lower()):
         username = trigger.host.split('.')[0]
-        try:
-            data = tracker.bot_api_request('/userinfo/' + username)
-        except ValueError:
-            return
+
+        data = tracker.bot_api_request('/userinfo/' + username)
         if 'status_code' in data:
             bot.say(data['message'])
             return
 
         if trigger.sender.lower() == '#tot-help':
+            print("channel is #tot-help")
             return
 
         if re.search('titansoftv|tot\-', trigger.sender.lower()):
@@ -150,17 +149,17 @@ def user_join(bot, trigger):
                 for chan in data['settings']['irc_channels']:
                     bot.write(('PRIVMSG', 'NickServ'), 'AJOIN ADD ' + trigger.nick + ' #' + chan)
                     if data['group_id'] == '1':
-                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 9999')
+                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 9999')
                     elif data['group_id'] == '3':
-                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 10')
+                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 10')
                     elif data['group_id'] == '6' or data['group_id'] == '4' or data['group_id'] == '7':
-                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 5')
+                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 5')
                     elif data['group_id'] == '8' or data['group_id'] == '9':
-                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 3')
+                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 3')
                     elif data['group_id'] == '5':
-                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 4')
+                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 4')
                     else:
-                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' DEL ' + trigger.nick)
+                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' DEL ' + trigger.nick)
 
 
 @module.interval(600)
