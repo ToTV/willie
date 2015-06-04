@@ -28,7 +28,7 @@ class TrackerClient(object):
         return url
 
     def torrent_get(self, info_hash):
-        resp = self._request("/torrent/{}".format(info_hash))
+        resp = self._request("/torrent/{}".format(info_hash.lower()))
         if resp.ok:
             return resp.json()
         return None
@@ -104,6 +104,7 @@ def torrent_info(bot, trigger):
         top_speed_dn = 0
         uid_up = 0
         uid_dn = 0
+        torrent_id = torrent.get("torrent_id", False)
         for peer in torrent.get("peers", []):
             if peer.get('speed_up_max', 0):
                 top_speed_up = peer.get('speed_up_max', 0)
@@ -119,9 +120,9 @@ def torrent_info(bot, trigger):
                 Entity("Leechers", torrent.get("leechers", 0)),
                 Entity("Snatches", torrent.get("snatches", 0)),
                 Entity("Top Speed Up [{}]".format(uid_up), "{:.2f} MiB/s".format(top_speed_up / 1024.0 / 1024.0)),
-                Entity("Top Speed Dn [{}]".format(uid_dn), "{:.2f} MiB/s".format(top_speed_dn / 1024.0 / 1024.0)),
-
-            ])
+                Entity("Top Speed Dn [{}]".format(uid_dn), "{:.2f} MiB/s".format(top_speed_dn / 1024.0 / 1024.0))
+            ]),
+            EntityGroup([Entity("{}api/torrents/{}/download".format(bot.config.site.url, torrent_id))])
         ])
         bot.say(resp)
     else:
