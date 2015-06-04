@@ -35,7 +35,7 @@ def user(bot, trigger):
     else:
         title_value = data.get('customtitle', None)
         title = Entity(title_value) if title_value else None
-        url = bot.confog.site.url + "user/" + data['username']
+        url = bot.config.site.url + "user/" + data['username']
         out = render(
             # title="User Stats",
             items=[
