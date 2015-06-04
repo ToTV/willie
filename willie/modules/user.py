@@ -8,7 +8,6 @@ from willie import module
 from totv import tracker
 from totv.theme import render, Entity, EntityGroup, UNDERLINE, NORMAL
 
-
 _base_url = ""
 _owner = ""
 
@@ -36,7 +35,7 @@ def user(bot, trigger):
     else:
         title_value = data.get('customtitle', None)
         title = Entity(title_value) if title_value else None
-        url = _base_url + "user/" + data['username']
+        url = bot.confog.site.url + "user/" + data['username']
         out = render(
             # title="User Stats",
             items=[
@@ -100,6 +99,7 @@ def enter(bot, trigger):
         'We now have a new system for joining our channels. Please register with NickServ, then /msg Titan AUTH <nick> <irckey>.')
     bot.say('Then you can simply /join #TitansofTv. If you need help, please join #ToT-Help')
 
+
 @module.require_privmsg
 @module.rule('(AUTODL) (\w+) (\w+)')
 def userJoin(bot, trigger):
@@ -129,6 +129,7 @@ def userJoin(bot, trigger):
 
     if method.lower() == 'autodl':
         bot.write(('SAJOIN', trigger.sender, '#tot-announce'))
+
 
 @module.rule('\!lockdown (\S+) (\S+)')
 def lock_down(bot, trigger):
@@ -184,18 +185,17 @@ def userJoin(bot, trigger):
                 for chan in data['settings']['irc_channels']:
                     bot.write(('PRIVMSG', 'NickServ'), 'AJOIN ADD ' + trigger.nick + ' #' + chan)
                     if data['group_id'] == '1':
-                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 9999')
+                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 9999')
                     elif data['group_id'] == '3':
-                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 10')
+                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 10')
                     elif data['group_id'] == '6' or data['group_id'] == '4' or data['group_id'] == '7':
-                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 5')
+                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 5')
                     elif data['group_id'] == '8' or data['group_id'] == '9':
-                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 3')
+                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 3')
                     elif data['group_id'] == '5':
-                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 4')
+                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 4')
                     else:
-                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' DEL ' + trigger.nick)
-
+                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' DEL ' + trigger.nick)
 
 
 @module.interval(600)
