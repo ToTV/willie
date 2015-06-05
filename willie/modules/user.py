@@ -2,11 +2,10 @@
 from __future__ import print_function, unicode_literals
 import json
 import re
-from totv.limit import RateLimit
 from willie import module
-
 from totv import tracker
-from totv.theme import render, Entity, EntityGroup, UNDERLINE, NORMAL
+from totv.limit import RateLimit
+from totv.theme import render, Entity, EntityGroup, UNDERLINE, NORMAL, render_error
 
 _base_url = ""
 _owner = ""
@@ -59,75 +58,69 @@ def user(bot, trigger):
 @module.require_privmsg
 @module.rule('(AUTH) (\w+) (\w+)')
 def user_auth(bot, trigger):
-    method = trigger.group(1)
     username = trigger.group(2)
     irckey = trigger.group(3)
+    try:
+        if username is None or irckey is None:
+            raise ValueError('Syntax: ENTER <username> <irckey>')
 
-    if username is None or irckey is None:
-        bot.say('Syntax: ENTER <username> <irckey>')
+        data = tracker.bot_api_request('/userinfo/' + username)
 
-    data = tracker.bot_api_request('/userinfo/' + username)
-    if 'status_code' in data:
-        bot.say(data['message'])
-        return
-
-    if 'irc_key' not in data['settings'].keys():
-        bot.say('Please set your irc key in your profile')
-        return
-
-    if data['enabled'] != "1":
-        bot.say('You are not enabled, please join the support channel')
-        return
-
-    if data['settings']['irc_key'] != irckey:
-        bot.say('You have given me an invalid irc key')
-        return
-
-    host = data['username'] + '.' + data['group'].replace(' ', '') + '.titansof.tv'
-    ident = data['id']
-    bot.write(('PRIVMSG', 'HOSTSERV'), 'SET ' + trigger.sender + ' ' + ident + '@' + host)
-    for chan in data['settings']['irc_channels']:
-        bot.write(('PRIVMSG', 'NickServ'), 'AJOIN ADD ' + trigger.sender + ' #' + chan)
-    bot.reply(
-        'Thank you for authing. If everything worked right, and your nick is registered, you should be able to join our channels. If you need help, join #ToT-help')
+        if 'status_code' in data:
+            raise ValueError(data['message'])
+        if 'irc_key' not in data['settings'].keys():
+            raise ValueError('Please set your irc key in your profile')
+        if data['enabled'] != "1":
+            raise ValueError('You are not enabled, please join the support channel')
+        if data['settings']['irc_key'] != irckey:
+            raise ValueError('You have given me an invalid irc key')
+    except ValueError as err:
+        bot.say(render_error(str(err), "Auth"))
+    else:
+        host = data['username'] + '.' + data['group'].replace(' ', '') + '.titansof.tv'
+        ident = data['id']
+        bot.write(('PRIVMSG', 'HOSTSERV'), 'SET ' + trigger.sender + ' ' + ident + '@' + host)
+        for chan in data['settings']['irc_channels']:
+            bot.write(('PRIVMSG', 'NickServ'), 'AJOIN ADD ' + trigger.sender + ' #' + chan)
+        msg = 'Thank you for authing. If everything worked right, and your nick is registered, ' \
+              'you should be able to join our channels. If you need help, join #ToT-help'
+        bot.say(render(items=[
+            EntityGroup([Entity("Auth")]),
+            EntityGroup([Entity(msg)]),
+        ]))
 
 
 @module.require_privmsg
 @module.rule('(ENTER)')
 def enter(bot, trigger):
     bot.reply(
-        'We now have a new system for joining our channels. Please register with NickServ, then /msg Titan AUTH <nick> <irckey>.')
+        'We now have a new system for joining our channels. Please register with '
+        'NickServ, then /msg Titan AUTH <nick> <irckey>.')
     bot.say('Then you can simply /join #TitansofTv. If you need help, please join #ToT-Help')
 
 
 @module.require_privmsg
 @module.rule('(AUTODL) (\w+) (\w+)')
-def userJoin(bot, trigger):
+def user_join(bot, trigger):
     method = trigger.group(1)
     username = trigger.group(2)
     irckey = trigger.group(3)
 
     if username is None or irckey is None:
-        bot.say('Syntax: ENTER <username> <irckey>')
+        bot.say(render_error('Syntax: ENTER <username> <irckey>'), "Auth")
 
     data = tracker.bot_api_request('/userinfo/' + username)
     if 'status_code' in data:
         bot.say(data['message'])
-        return
-
-    if 'irc_key' not in data['settings'].keys():
+    elif 'irc_key' not in data['settings'].keys():
         bot.say('Please set your irc key in your profile')
+    elif data['enabled'] != "1":
+        bot.say(render_error('You are not enabled, please join the support channel', "Auth"))
         return
-
-    if data['enabled'] != "1":
-        bot.say('You are not enabled, please join the support channel')
+    elif data['settings']['irc_key'] != irckey:
+        bot.say(render_error('You have given me an invalid irc key', "Auth"))
         return
-
-    if data['settings']['irc_key'] != irckey:
-        bot.say('You have given me an invalid irc key')
-        return
-
-    if method.lower() == 'autodl':
+    elif method.lower() == 'autodl':
         bot.write(('SAJOIN', trigger.sender, '#tot-announce'))
 
 
@@ -137,11 +130,11 @@ def lock_down(bot, trigger):
     level = trigger.group(2)
 
     if trigger.nick.lower() != _owner.lower():
-        bot.say('nice try FBI')
+        bot.say(render_error('nice try FBI', "Lockdown"))
         return
 
     if channel is None or level is None:
-        bot.say('Syntax: !lockdown #channel level')
+        bot.say(render_error('Syntax: !lockdown #channel level', "Lockdown"))
 
     bot.write(('MODE', channel, "+i"))
 
@@ -152,7 +145,7 @@ def lock_down(bot, trigger):
 
 @module.event('JOIN')
 @module.rule('.*')
-def userJoin(bot, trigger):
+def user_join(bot, trigger):
     if re.search('titansof\.tv', trigger.host.lower()):
         username = trigger.host.split('.')[0]
 
@@ -213,8 +206,7 @@ def split_hostmask(hostmask):
     """
     posex = hostmask.find(u'!')
     posat = hostmask.find(u'@')
-    if posex <= 0 or posat < 3 or posex + 1 == posat or posat + 1 == len(
-            hostmask):  # All parts must be > 0 in length
+    if posex <= 0 or posat < 3 or posex + 1 == posat or posat + 1 == len(hostmask):
+        # All parts must be > 0 in length
         raise ValueError("Hostmask must be in the form '*!*@*'")
-    return [hostmask[0:posex], hostmask[posex + 1: posat],
-            hostmask[posat + 1:]]
+    return [hostmask[0:posex], hostmask[posex + 1: posat], hostmask[posat + 1:]]

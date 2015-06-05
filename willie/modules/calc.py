@@ -10,6 +10,9 @@ from __future__ import unicode_literals
 import html
 import re
 from socket import timeout
+from urllib.parse import quote_plus
+from six import unichr
+from totv.theme import render, EntityGroup, Entity, render_error
 from willie import web
 from willie.module import commands, example
 from willie.tools.calculation import eval_equation
@@ -81,20 +84,24 @@ def wa(bot, trigger):
             char_code = match.group(1)
             char = unichr(int(char_code, 16))
             answer = answer.replace('\:' + char_code, char)
-        waOutputArray = answer.split(";")
-        if(len(waOutputArray) < 2):
-            if(answer.strip() == "Couldn't grab results from json stringified precioussss."):
+        output = answer.split(";")
+        items = [
+            EntityGroup([Entity("Wolfram")]),
+            EntityGroup([Entity(output[0])])
+        ]
+        if len(output) < 2:
+            if answer.strip() == "Couldn't grab results from json stringified precioussss.":
                 # Answer isn't given in an IRC-able format, just link to it.
-                bot.say('[WOLFRAM]Couldn\'t display answer, try http://www.wolframalpha.com/input/?i=' + query.replace(' ', '+'))
+                url = "http://www.wolframalpha.com/input/?i={}".format(quote_plus(query))
+                items.append(EntityGroup([Entity("Unable to render content type to IRC, try: {}".format(url))]))
             else:
-                bot.say('[WOLFRAM ERROR]' + answer)
+                bot.say(render_error(answer, "Wolfram"))
         else:
-
-            bot.say('[WOLFRAM] ' + waOutputArray[0] + " = "
-                    + waOutputArray[1])
-        waOutputArray = []
+            items.append(EntityGroup([Entity(output[1])]))
+        bot.say(render(items=items))
+        #bot.say('[WOLFRAM] ' + output[0] + " = " + output[1])
     else:
-        bot.reply('Sorry, no result.')
+        bot.say(render_error('Sorry, no result.', "Wolfram"))
 
 
 if __name__ == "__main__":
