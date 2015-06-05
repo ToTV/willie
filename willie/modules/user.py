@@ -161,7 +161,7 @@ def user_join(bot, trigger):
             return
 
         if trigger.sender.lower() == '#tot-help':
-            print("channel is #tot-help")
+            #print("channel is #tot-help")
             return
 
         if re.search('titansoftv|tot\-', trigger.sender.lower()):

@@ -6,8 +6,9 @@ from urllib import parse
 import humanize
 import requests
 from willie import module
-
 from totv import tracker
+from totv import time
+from totv.service import tvrage
 from totv.theme import Entity, render, EntityGroup, render_error
 
 
@@ -17,6 +18,40 @@ _base_url = ""
 def setup(bot):
     global _base_url
     _base_url = bot.config.site.url
+
+
+@module.commands("tonight")
+def tonight(bot, trigger):
+    api_key = bot.config.tvrage.api_key
+    sched_data = tvrage.schedule(api_key)
+
+    # Header
+    rows = [render(items=[
+        EntityGroup([Entity("Schedule")]),
+        EntityGroup([Entity(sched_data['date'])])
+    ])]
+    for hour, shows in sched_data['hours'].items():
+        dt = tvrage.parse_hour(hour)
+        if dt.hour < 17:
+            continue
+        for show in shows:
+            items = [
+                EntityGroup([Entity(hour)]),
+                EntityGroup([Entity(show['name'])]),
+                EntityGroup([
+                    Entity(show['ep']),
+                    Entity(show['title']),
+                    Entity(show['network'])
+                ])
+            ]
+            time_delta = show['airs_in'].total_seconds()
+            if time_delta > 0:
+                time_parts = time.format_time_delta(time_delta)
+                time_msg = '{} Hours {} Mins'.format(time_parts[0], time_parts[1])
+                items.append(EntityGroup([Entity("Airs", time_msg)]))
+            rows.append(render(items=items))
+    for row in rows:
+        bot.msg(trigger.nick, row)
 
 
 @module.commands('series', 's')
@@ -34,7 +69,7 @@ def series(bot, trigger):
             details.append(Entity("Status", data['status']))
             details.append(Entity("Year", data['year']))
             if data['air_day'] is not None:
-                details.append(Entity("Airs", "{} @ {}".format(data['air_day'], data['air_time'])))
+                details.append(Entity("Airs in", "{} @ {}".format(data['air_day'], data['air_time'])))
             items.append(details)
             items.append(Entity(_base_url + "series/" + str(data['slug'] if data['slug'] else data['id'])))
             bot.say(render(items=items))
