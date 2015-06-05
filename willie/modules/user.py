@@ -8,7 +8,6 @@ from willie import module
 from totv import tracker
 from totv.theme import render, Entity, EntityGroup, UNDERLINE, NORMAL
 
-
 _base_url = ""
 _owner = ""
 
@@ -36,7 +35,7 @@ def user(bot, trigger):
     else:
         title_value = data.get('customtitle', None)
         title = Entity(title_value) if title_value else None
-        url = _base_url + "user/" + data['username']
+        url = bot.config.site.url + "user/" + data['username']
         out = render(
             # title="User Stats",
             items=[
@@ -94,11 +93,42 @@ def user_auth(bot, trigger):
 
 
 @module.require_privmsg
-@module.rule('(ENTER|AUTODL)')
+@module.rule('(ENTER)')
 def enter(bot, trigger):
     bot.reply(
         'We now have a new system for joining our channels. Please register with NickServ, then /msg Titan AUTH <nick> <irckey>.')
     bot.say('Then you can simply /join #TitansofTv. If you need help, please join #ToT-Help')
+
+
+@module.require_privmsg
+@module.rule('(AUTODL) (\w+) (\w+)')
+def userJoin(bot, trigger):
+    method = trigger.group(1)
+    username = trigger.group(2)
+    irckey = trigger.group(3)
+
+    if username is None or irckey is None:
+        bot.say('Syntax: ENTER <username> <irckey>')
+
+    data = tracker.bot_api_request('/userinfo/' + username)
+    if 'status_code' in data:
+        bot.say(data['message'])
+        return
+
+    if 'irc_key' not in data['settings'].keys():
+        bot.say('Please set your irc key in your profile')
+        return
+
+    if data['enabled'] != "1":
+        bot.say('You are not enabled, please join the support channel')
+        return
+
+    if data['settings']['irc_key'] != irckey:
+        bot.say('You have given me an invalid irc key')
+        return
+
+    if method.lower() == 'autodl':
+        bot.write(('SAJOIN', trigger.sender, '#tot-announce'))
 
 
 @module.rule('\!lockdown (\S+) (\S+)')
@@ -128,7 +158,13 @@ def userJoin(bot, trigger):
 
         data = tracker.bot_api_request('/userinfo/' + username)
         if 'status_code' in data:
-            bot.say(data['message'])
+            if data['message'].startswith('User Not Found'):
+                bot.write(('NOTICE', trigger.nick), 'You are not enabled, please join the support channel')
+                bot.write(('SAJOIN', trigger.nick), '#tot-help')
+                bot.write(('SAPART', trigger.nick), trigger.sender())
+                return
+            else:
+                bot.write(('PRIVMSG', '#tot-dev'), data['message'])
             return
 
         if trigger.sender.lower() == '#tot-help':
@@ -149,17 +185,17 @@ def userJoin(bot, trigger):
                 for chan in data['settings']['irc_channels']:
                     bot.write(('PRIVMSG', 'NickServ'), 'AJOIN ADD ' + trigger.nick + ' #' + chan)
                     if data['group_id'] == '1':
-                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 9999')
+                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 9999')
                     elif data['group_id'] == '3':
-                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 10')
+                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 10')
                     elif data['group_id'] == '6' or data['group_id'] == '4' or data['group_id'] == '7':
-                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 5')
+                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 5')
                     elif data['group_id'] == '8' or data['group_id'] == '9':
-                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 3')
+                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 3')
                     elif data['group_id'] == '5':
-                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 4')
+                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 4')
                     else:
-                        bot.write(('PRIVMSG','ChanServ'), 'ACCESS #' + chan + ' DEL ' + trigger.nick)
+                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' DEL ' + trigger.nick)
 
 
 @module.interval(600)
