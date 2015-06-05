@@ -7,17 +7,12 @@ Licensed under the Eiffel Forum License 2.
 http://willie.dfbta.net
 """
 from __future__ import unicode_literals
-
+import html
 import re
+from socket import timeout
 from willie import web
 from willie.module import commands, example
 from willie.tools.calculation import eval_equation
-from socket import timeout
-import sys
-if sys.version_info.major < 3:
-    import HTMLParser
-else:
-    import html.parser as HTMLParser
 
 
 @commands('c', 'calc')
@@ -77,7 +72,7 @@ def wa(bot, trigger):
         return bot.say('[WOLFRAM ERROR] Request timed out')
     if answer:
         answer = answer.decode('unicode_escape')
-        answer = HTMLParser.HTMLParser().unescape(answer)
+        answer = html.unescape(answer)
         # This might not work if there are more than one instance of escaped
         # unicode chars But so far I haven't seen any examples of such output
         # examples from Wolfram Alpha
