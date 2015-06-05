@@ -2,7 +2,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 import datetime
 from urllib import parse
-
+from time import time as unixtime
 import humanize
 import requests
 from willie import module
@@ -14,6 +14,35 @@ from totv.theme import Entity, render, EntityGroup, render_error
 
 _base_url = ""
 
+# Allowed in !tonight output
+network_whitelist = {
+    "abc",
+    "nbc",
+    "cbs",
+    "investigation discovery",
+    "mtv",
+    "science",
+    "cnn",
+    "national geographic channel",
+    "fox",
+    "bravo",
+    "cartoon network"
+    "ifc",
+    "history",
+    "fx",
+    "comedy central",
+    "tbs",
+    "syfy",
+    "showtime",
+    "netflix"
+}
+
+
+_sched_cache = {
+    'time': 0,
+    'data': None
+}
+
 
 def setup(bot):
     global _base_url
@@ -22,8 +51,15 @@ def setup(bot):
 
 @module.commands("tonight")
 def tonight(bot, trigger):
-    api_key = bot.config.tvrage.api_key
-    sched_data = tvrage.schedule(api_key)
+    global _sched_cache
+    t0 = unixtime()
+    if t0 - _sched_cache['time'] < 60 * 10 and _sched_cache['data']:
+        sched_data = _sched_cache['data']
+    else:
+        api_key = bot.config.tvrage.api_key
+        sched_data = tvrage.schedule(api_key)
+        _sched_cache['data'] = sched_data
+        _sched_cache['time'] = t0
 
     # Header
     rows = [render(items=[
@@ -35,6 +71,8 @@ def tonight(bot, trigger):
         if dt.hour < 17:
             continue
         for show in shows:
+            if show['network'].lower() not in network_whitelist:
+                continue
             items = [
                 EntityGroup([Entity(hour)]),
                 EntityGroup([Entity(show['name'])]),
@@ -51,7 +89,7 @@ def tonight(bot, trigger):
                 items.append(EntityGroup([Entity("Airs", time_msg)]))
             rows.append(render(items=items))
     for row in rows:
-        bot.msg(trigger.nick, row)
+        bot.write(("PRIVMSG", trigger.nick), row)
 
 
 @module.commands('series', 's')
