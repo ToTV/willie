@@ -172,7 +172,7 @@ def user_join(bot, trigger):
                 return
 
             if trigger.host.split('.')[1].lower() != data['group'].lower():
-                host = data['username'] + '.' + data['group'].replace(' ', '') + '.titansof.tv'
+                host = data['username'].replace("_", "-") + '.' + data['group'].replace(' ', '') + '.titansof.tv'
                 ident = data['id']
                 bot.write(('PRIVMSG', 'HOSTSERV'), 'SET ' + trigger.nick + ' ' + ident + '@' + host)
                 for chan in data['settings']['irc_channels']:
