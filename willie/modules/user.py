@@ -77,7 +77,8 @@ def user_auth(bot, trigger):
     except ValueError as err:
         bot.say(render_error(str(err), "Auth"))
     else:
-        host = data['username'] + '.' + data['group'].replace(' ', '') + '.titansof.tv'
+        username = filter(str.isalnum, data['username'])
+        host = username + '.' + data['group'].replace(' ', '') + '.titansof.tv'
         ident = data['id']
         bot.write(('PRIVMSG', 'HOSTSERV'), 'SET ' + trigger.sender + ' ' + ident + '@' + host)
         for chan in data['settings']['irc_channels']:
@@ -120,7 +121,7 @@ def user_join(bot, trigger):
     elif data['settings']['irc_key'] != irckey:
         bot.say(render_error('You have given me an invalid irc key', "Auth"))
         return
-    elif method.lower() == 'autodl':
+    else:
         bot.write(('SAJOIN', trigger.sender, '#tot-announce'))
 
 
@@ -146,13 +147,23 @@ def lock_down(bot, trigger):
 @module.event('JOIN')
 @module.rule('.*')
 def user_join(bot, trigger):
-    if re.search('titansof\.tv', trigger.host.lower()):
+    if re.search('titansoftv|tot\-', trigger.sender.lower()):
+        if trigger.sender.lower() == '#tot-help':
+            #print("channel is #tot-help")
+            return
+
         username = trigger.host.split('.')[0]
 
-        data = tracker.bot_api_request('/userinfo/' + username)
+        ident = trigger.hostmask.split('!')[1].split('@')[0]
+
+        if ident.isdigit() is True:
+            data = tracker.bot_api_request('/userinfo/' + ident)
+        else:
+            data = tracker.bot_api_request('/userinfo/' + username)
+
         if 'status_code' in data:
             if data['message'].startswith('User Not Found'):
-                bot.write(('NOTICE', trigger.nick), 'You are not enabled, please join the support channel')
+                bot.write(('NOTICE', trigger.nick), 'User not found, you are being joined to our help channel.')
                 bot.write(('SAJOIN', trigger.nick), '#tot-help')
                 bot.write(('SAPART', trigger.nick), trigger.sender())
                 return
@@ -160,35 +171,31 @@ def user_join(bot, trigger):
                 bot.write(('PRIVMSG', '#tot-dev'), data['message'])
             return
 
-        if trigger.sender.lower() == '#tot-help':
-            #print("channel is #tot-help")
+        if data['enabled'] != "1":
+            bot.write(('NOTICE', trigger.nick), 'You are not enabled, you are being joined to our help channel.')
+            bot.write(('SAJOIN', trigger.nick), '#tot-help')
+            bot.write(('SAPART', trigger.nick), trigger.sender())
             return
 
-        if re.search('titansoftv|tot\-', trigger.sender.lower()):
-            if data['enabled'] != "1":
-                bot.write(('NOTICE', trigger.nick), 'You are not enabled, please join the support channel')
-                bot.write(('SAJOIN', trigger.nick), '#tot-help')
-                bot.write(('SAPART', trigger.nick), trigger.sender())
-                return
-
-            if trigger.host.split('.')[1].lower() != data['group'].lower():
-                host = data['username'].replace("_", "-") + '.' + data['group'].replace(' ', '') + '.titansof.tv'
-                ident = data['id']
-                bot.write(('PRIVMSG', 'HOSTSERV'), 'SET ' + trigger.nick + ' ' + ident + '@' + host)
-                for chan in data['settings']['irc_channels']:
-                    bot.write(('PRIVMSG', 'NickServ'), 'AJOIN ADD ' + trigger.nick + ' #' + chan)
-                    if data['group_id'] == '1':
-                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 9999')
-                    elif data['group_id'] == '3':
-                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 10')
-                    elif data['group_id'] == '6' or data['group_id'] == '4' or data['group_id'] == '7':
-                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 5')
-                    elif data['group_id'] == '8' or data['group_id'] == '9':
-                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 3')
-                    elif data['group_id'] == '5':
-                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 4')
-                    else:
-                        bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' DEL ' + trigger.nick)
+        if trigger.host.split('.')[1].lower() != data['group'].lower():
+            username = filter(str.isalnum, data['username'])
+            host = username + '.' + data['group'].replace(' ', '') + '.titansof.tv'
+            ident = data['id']
+            bot.write(('PRIVMSG', 'HOSTSERV'), 'SET ' + trigger.nick + ' ' + ident + '@' + host)
+            for chan in data['settings']['irc_channels']:
+                bot.write(('PRIVMSG', 'NickServ'), 'AJOIN ADD ' + trigger.nick + ' #' + chan)
+                if data['group_id'] == '1':
+                    bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 9999')
+                elif data['group_id'] == '3':
+                    bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 10')
+                elif data['group_id'] == '6' or data['group_id'] == '4' or data['group_id'] == '7':
+                    bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 5')
+                elif data['group_id'] == '8' or data['group_id'] == '9':
+                    bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 3')
+                elif data['group_id'] == '5':
+                    bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' ADD ' + trigger.nick + ' 4')
+                else:
+                    bot.write(('PRIVMSG', 'ChanServ'), 'ACCESS #' + chan + ' DEL ' + trigger.nick)
 
 
 @module.interval(600)
