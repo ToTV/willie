@@ -309,7 +309,10 @@ def track_join(bot, trigger):
     if trigger.nick == bot.nick and trigger.sender not in bot.channels:
         bot.channels.append(trigger.sender)
         bot.privileges[trigger.sender] = dict()
-    bot.privileges[trigger.sender][trigger.nick] = 0
+    try:
+        bot.privileges[trigger.sender][trigger.nick] = 0
+    except KeyError:
+        pass
 
 
 @willie.module.rule('.*')

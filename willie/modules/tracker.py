@@ -5,6 +5,7 @@ Simple client to interact with the backend tracker instance.
 from __future__ import print_function, unicode_literals, absolute_import
 import requests
 from willie.module import commands
+from guessit import guess_file_info
 from totv.theme import render_error, render, Entity, EntityGroup
 
 
@@ -127,3 +128,14 @@ def torrent_info(bot, trigger):
         bot.say(resp)
     else:
         bot.say(render_error("Infohash Not found", "swarm"))
+
+
+@commands("parse")
+def parse(bot, trigger):
+    release_name = trigger.group(2).strip()
+    attrs = guess_file_info(release_name.lower(), options={'name_only': True})
+    items = [EntityGroup([Entity("RlsParse")])]
+
+    for k, v in attrs.items():
+        items.append(EntityGroup([Entity(k, v)]))
+    bot.say("{}".format(render(items=items)))
