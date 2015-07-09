@@ -74,7 +74,7 @@ def lastfm(bot, trigger):
 def update_lastfm_user(bot, trigger):
     user = trigger.group(2)
     bot.db.set_nick_value(trigger.nick, 'lastfm_user', user)
-    bot.say(render([
+    bot.say(render(items=[
         EntityGroup([Entity("LastFM")]),
         EntityGroup([Entity("User set successfully")])
     ]))
