@@ -177,7 +177,8 @@ def user_join(bot, trigger):
         return
     if trigger.sender.lower() == '#tot-help':
         return
-    if bot.nick.lower() == trigger.sender.lower():
+    # TODO no hardcode
+    if bot.nick.lower() == "titan":
         return
     username = trigger.host.split('.')[0]
 
