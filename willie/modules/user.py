@@ -191,7 +191,7 @@ def user_join(bot, trigger):
         if data['message'].startswith('User Not Found'):
             bot.write(('NOTICE', trigger.nick), 'User not found, you are being joined to our help channel.')
             bot.write(('SAJOIN', trigger.nick), '#tot-help')
-            bot.write(('SAPART', trigger.nick), trigger.sender())
+            bot.write(('SAPART', trigger.nick), str(trigger.sender))
             return
         else:
             bot.write(('PRIVMSG', '#tot-dev'), data['message'])
@@ -200,7 +200,7 @@ def user_join(bot, trigger):
     if data['enabled'] != "1":
         bot.write(('NOTICE', trigger.nick), 'You are not enabled, you are being joined to our help channel.')
         bot.write(('SAJOIN', trigger.nick), '#tot-help')
-        bot.write(('SAPART', trigger.nick), trigger.sender())
+        bot.write(('SAPART', trigger.nick), str(trigger.sender))
         return
 
     if trigger.host.split('.')[1].lower() != data['group'].lower():
