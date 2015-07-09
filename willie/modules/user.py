@@ -177,7 +177,8 @@ def user_join(bot, trigger):
         return
     if trigger.sender.lower() == '#tot-help':
         return
-
+    if bot.nick.lower() == trigger.sender.lower():
+        return
     username = trigger.host.split('.')[0]
 
     ident = trigger.hostmask.split('!')[1].split('@')[0]
